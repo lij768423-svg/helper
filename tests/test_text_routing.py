@@ -1,6 +1,8 @@
 """好友/群消息路由和实际桥接 ABI 的回归验证，不向微信发送消息。"""
 from __future__ import annotations
 
+import os
+
 import ctypes
 from pathlib import Path
 import sys
@@ -66,6 +68,8 @@ class TextRoutingTests(unittest.TestCase):
             self.assertTrue(data["is_self"])
             self.assertEqual(data["msg"], text)
 
+    @unittest.skipUnless(os.name == "nt", "需要 Windows 原生桥接与 pefile")
+
     def test_native_service_skips_recent_bot_text_but_allows_players(self):
         if str(NATIVE) not in sys.path:
             sys.path.insert(0, str(NATIVE))
@@ -94,6 +98,8 @@ class TextRoutingTests(unittest.TestCase):
         self.identify()
         self.assertIsNone(self.router.convert("gh_example", SELF, "echo 公众号"))
         self.assertIsNone(self.router.convert("weixin", SELF, "echo 系统"))
+
+    @unittest.skipUnless(os.name == "nt", "需要 Windows 原生桥接与 pefile")
 
     def test_target_validation_matches_native_buffer(self):
         for target in ("filehelper", FRIEND, GROUP, "a" * 127):

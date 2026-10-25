@@ -1,5 +1,6 @@
 """群人格持久性、统一风格、真实艾特与十条上下文及取消竞态。"""
 import json
+import os
 import sys
 import unittest
 from datetime import timedelta
@@ -279,6 +280,8 @@ class PersonalityTests(unittest.TestCase):
             plugin.on_message(self.chat(), self.ctx)
         self.assertEqual(self.backend.sent, [])
 
+    @unittest.skipUnless(os.name == "nt", "需要 Windows 原生桥接与 pefile")
+
     def test_personality_change_during_at_send_pacing_cancels_native_send(self):
         self.setup_chat()
         msg = self.chat()
@@ -333,6 +336,8 @@ class NativeAtReceiveTests(unittest.TestCase):
     def test_visible_labels_are_removed_on_unicode_at_boundary(self):
         self.assertEqual(strip_at_labels("@机器 人\u2005@小明\u2005请看看这句话"), "请看看这句话")
         self.assertEqual(strip_at_labels("普通 @example.com 文本"), "普通 @example.com 文本")
+
+    @unittest.skipUnless(os.name == "nt", "需要 Windows 原生桥接与 pefile")
 
     def test_native_metadata_marks_only_actual_robot_group_at(self):
         native = daily.ROOT / "native"

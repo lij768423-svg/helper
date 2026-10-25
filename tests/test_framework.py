@@ -63,6 +63,8 @@ class MemoryBackend:
 class FrameworkTests(unittest.TestCase):
     def setUp(self):
         self.previous_logging = logging.root.manager.disable
+        # 用 addCleanup：setUp 中途失败时 tearDown 不会执行，否则 logging 会对后续测试保持禁用。
+        self.addCleanup(logging.disable, self.previous_logging)
         logging.disable(logging.CRITICAL)
         SCRATCH.mkdir(parents=True, exist_ok=True)
         self.temporary = tempfile.TemporaryDirectory(dir=SCRATCH)
@@ -70,7 +72,7 @@ class FrameworkTests(unittest.TestCase):
         self.assertTrue(self.root.is_relative_to(SCRATCH.resolve()))
         shutil.copytree(ROOT / "plugins", self.root / "plugins")
         self.path = self.root / "bot_config.json"
-        self.config = json.loads((ROOT / "bot_config.json").read_text(encoding="utf-8"))
+        self.config = json.loads((ROOT / "bot_config.example.json").read_text(encoding="utf-8"))
         self.config.update(console=False, reconnect_seconds=0.1, text_send_delay={"enabled": False})
         # 框架测试不调用外部大模型；玩法单独用假客户端验证。
         self.config["plugins"]["idiom_chain"]["enabled"] = False
@@ -93,7 +95,6 @@ class FrameworkTests(unittest.TestCase):
         # 递归清理只针对本测试创建、已核对位于工作区的临时目录。
         self.assertTrue(self.root.resolve().is_relative_to(SCRATCH.resolve()))
         self.temporary.cleanup()
-        logging.disable(self.previous_logging)
 
     def write_config(self):
         self.path.write_text(json.dumps(self.config, ensure_ascii=False), encoding="utf-8")
@@ -244,6 +245,8 @@ class FrameworkTests(unittest.TestCase):
         finally:
             app.stop_event.set()
             thread.join(3)
+
+    @unittest.skipUnless(os.name == "nt", "InstanceLock 依赖 msvcrt，仅 Windows")
 
     def test_single_instance_lock_is_released(self):
         path = self.root / "bot.lock"
